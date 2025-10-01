@@ -34,6 +34,9 @@ const styles = {
   buttonBlue: {
     backgroundColor: '#2196F3'
   },
+  buttonPurple: {
+    backgroundColor: '#9c27b0'
+  },
   main: {
     display: 'flex',
     height: 'calc(100vh - 80px)'
@@ -77,6 +80,10 @@ const styles = {
     cursor: 'pointer',
     textAlign: 'left'
   },
+  templateButtonActive: {
+    backgroundColor: '#9c27b0',
+    border: '1px solid #ba68c8'
+  },
   input: {
     width: '100%',
     padding: '10px',
@@ -96,6 +103,10 @@ const styles = {
     color: 'white',
     minHeight: '100px',
     resize: 'vertical'
+  },
+  slider: {
+    width: '100%',
+    margin: '10px 0'
   },
   preview: {
     minHeight: '100vh',
@@ -162,40 +173,146 @@ function App() {
       id: 1,
       title: 'Welcome to Presentation Studio',
       content: 'Create stunning interactive presentations with custom animations and effects',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      x: 0, y: 0, z: 0, rotation: 0, scale: 1
     },
     {
       id: 2,
       title: 'Easy to Use',
       content: 'Drag, drop, and customize your slides with our intuitive interface',
-      background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
+      background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      x: 1200, y: 0, z: 0, rotation: 0, scale: 1
     },
     {
       id: 3,
       title: 'Export & Share',
       content: 'Export your presentations as HTML files and share them anywhere',
-      background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'
+      background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+      x: 2400, y: 0, z: 0, rotation: 0, scale: 1
     }
   ])
   
   const [currentSlide, setCurrentSlide] = useState(1)
   const [isPreview, setIsPreview] = useState(false)
+  const [activeTemplate, setActiveTemplate] = useState('')
 
   const templates = [
     {
       name: 'Basic Flow',
       description: 'Simple left-to-right progression',
-      apply: () => alert('Template applied! In a full version, this would rearrange your slides.')
+      icon: '→',
+      apply: () => {
+        const updatedSlides = slides.map((slide, index) => ({
+          ...slide,
+          x: index * 1200,
+          y: 0,
+          z: 0,
+          rotation: 0,
+          scale: 1
+        }))
+        setSlides(updatedSlides)
+        setActiveTemplate('Basic Flow')
+      }
     },
     {
       name: 'Zoom & Pan',
-      description: 'Dynamic zoom effects',
-      apply: () => alert('Template applied! This would add zoom animations.')
+      description: 'Dynamic zoom effects with panning',
+      icon: '🔍',
+      apply: () => {
+        const updatedSlides = slides.map((slide, index) => ({
+          ...slide,
+          x: index * 800,
+          y: index * 200,
+          z: index * -500,
+          rotation: 0,
+          scale: 1 + (index * 0.3)
+        }))
+        setSlides(updatedSlides)
+        setActiveTemplate('Zoom & Pan')
+      }
     },
     {
       name: 'Rotation Carousel',
-      description: 'Circular arrangement',
-      apply: () => alert('Template applied! This would arrange slides in a circle.')
+      description: 'Circular arrangement with rotation',
+      icon: '🎠',
+      apply: () => {
+        const radius = 800
+        const updatedSlides = slides.map((slide, index) => {
+          const angle = (index * 360) / slides.length
+          const radian = (angle * Math.PI) / 180
+          return {
+            ...slide,
+            x: Math.cos(radian) * radius,
+            y: Math.sin(radian) * radius,
+            z: 0,
+            rotation: angle,
+            scale: 1
+          }
+        })
+        setSlides(updatedSlides)
+        setActiveTemplate('Rotation Carousel')
+      }
+    },
+    {
+      name: '3D Cube',
+      description: 'Cube-like transitions between slides',
+      icon: '🎲',
+      apply: () => {
+        const positions = [
+          { x: 0, y: 0, z: 0, rotation: 0 },
+          { x: 1000, y: 0, z: 0, rotation: 90 },
+          { x: 0, y: 1000, z: 0, rotation: 180 },
+          { x: -1000, y: 0, z: 0, rotation: 270 },
+          { x: 0, y: 0, z: 1000, rotation: 0 },
+          { x: 0, y: 0, z: -1000, rotation: 0 }
+        ]
+        const updatedSlides = slides.map((slide, index) => ({
+          ...slide,
+          ...positions[index % positions.length],
+          scale: 1
+        }))
+        setSlides(updatedSlides)
+        setActiveTemplate('3D Cube')
+      }
+    },
+    {
+      name: 'Spiral Journey',
+      description: 'Spiral path with dynamic positioning',
+      icon: '🌀',
+      apply: () => {
+        const updatedSlides = slides.map((slide, index) => {
+          const angle = index * 90
+          const radius = index * 300
+          const radian = (angle * Math.PI) / 180
+          return {
+            ...slide,
+            x: Math.cos(radian) * radius,
+            y: Math.sin(radian) * radius,
+            z: index * -200,
+            rotation: angle,
+            scale: 1 - (index * 0.1)
+          }
+        })
+        setSlides(updatedSlides)
+        setActiveTemplate('Spiral Journey')
+      }
+    },
+    {
+      name: 'Wave Motion',
+      description: 'Flowing wave-like progression',
+      icon: '🌊',
+      apply: () => {
+        const updatedSlides = slides.map((slide, index) => ({
+          ...slide,
+          x: index * 1000,
+          y: Math.sin(index * 0.8) * 400,
+          z: Math.cos(index * 0.5) * 200,
+          rotation: index * 15,
+          scale: 1 + Math.sin(index * 0.3) * 0.2
+        }))
+        setSlides(updatedSlides)
+        setActiveTemplate('Wave Motion')
+      }
     }
   ]
 
@@ -204,9 +321,23 @@ function App() {
       id: Date.now(),
       title: `Slide ${slides.length + 1}`,
       content: 'Add your content here...',
-      background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
+      background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+      x: slides.length * 1200,
+      y: 0,
+      z: 0,
+      rotation: 0,
+      scale: 1
     }
     setSlides([...slides, newSlide])
+  }
+
+  const deleteSlide = (id) => {
+    if (slides.length > 1) {
+      setSlides(slides.filter(slide => slide.id !== id))
+      if (currentSlide === id) {
+        setCurrentSlide(slides[0].id)
+      }
+    }
   }
 
   const updateSlide = (id, updates) => {
@@ -221,22 +352,31 @@ function App() {
 <html>
 <head>
     <title>My Presentation</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.jsdelivr.net/npm/impress.js@2.0.0/js/impress.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
         .step { 
             width: 800px; height: 600px; padding: 40px; border-radius: 10px; 
             color: white; display: flex; flex-direction: column; 
             justify-content: center; align-items: center; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
         .step h1 { font-size: 3em; margin-bottom: 20px; }
-        .step p { font-size: 1.5em; }
+        .step p { font-size: 1.5em; line-height: 1.6; }
     </style>
 </head>
 <body>
     <div id="impress">
-        ${slides.map((slide, index) => `
-        <div class="step" data-x="${index * 1200}" data-y="0" style="background: ${slide.background}">
+        ${slides.map(slide => `
+        <div class="step" 
+             data-x="${slide.x}" 
+             data-y="${slide.y}" 
+             data-z="${slide.z}" 
+             data-rotate="${slide.rotation}" 
+             data-scale="${slide.scale}"
+             style="background: ${slide.background}">
             <h1>${slide.title}</h1>
             <p>${slide.content}</p>
         </div>`).join('')}
@@ -309,7 +449,7 @@ function App() {
       <header style={styles.header}>
         <div>
           <h1 style={styles.title}>✨ Presentation Studio</h1>
-          <p style={styles.subtitle}>Create stunning interactive presentations</p>
+          <p style={styles.subtitle}>Create stunning interactive presentations with custom animations</p>
         </div>
         <div>
           <button 
@@ -343,9 +483,28 @@ function App() {
               }}
               onClick={() => setCurrentSlide(slide.id)}
             >
-              <div style={{fontWeight: 'bold', fontSize: '14px'}}>{slide.title}</div>
-              <div style={{fontSize: '12px', opacity: 0.8, marginTop: '5px'}}>
-                {slide.content.substring(0, 50)}...
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                <div style={{flex: 1}}>
+                  <div style={{fontWeight: 'bold', fontSize: '14px'}}>{slide.title}</div>
+                  <div style={{fontSize: '12px', opacity: 0.8, marginTop: '5px'}}>
+                    {slide.content.substring(0, 30)}...
+                  </div>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    deleteSlide(slide.id)
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#ff6b6b',
+                    cursor: 'pointer',
+                    padding: '5px'
+                  }}
+                >
+                  🗑️
+                </button>
               </div>
             </div>
           ))}
@@ -375,6 +534,68 @@ function App() {
           </div>
 
           <div style={{marginTop: '20px'}}>
+            <h3>3D Positioning:</h3>
+            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '10px'}}>
+              <div>
+                <label>X Position: {currentSlideData.x}px</label>
+                <input
+                  type="range"
+                  min="-2000"
+                  max="2000"
+                  value={currentSlideData.x}
+                  onChange={(e) => updateSlide(currentSlide, { x: parseInt(e.target.value) })}
+                  style={styles.slider}
+                />
+              </div>
+              <div>
+                <label>Y Position: {currentSlideData.y}px</label>
+                <input
+                  type="range"
+                  min="-2000"
+                  max="2000"
+                  value={currentSlideData.y}
+                  onChange={(e) => updateSlide(currentSlide, { y: parseInt(e.target.value) })}
+                  style={styles.slider}
+                />
+              </div>
+              <div>
+                <label>Z Position: {currentSlideData.z}px</label>
+                <input
+                  type="range"
+                  min="-1000"
+                  max="1000"
+                  value={currentSlideData.z}
+                  onChange={(e) => updateSlide(currentSlide, { z: parseInt(e.target.value) })}
+                  style={styles.slider}
+                />
+              </div>
+              <div>
+                <label>Rotation: {currentSlideData.rotation}°</label>
+                <input
+                  type="range"
+                  min="0"
+                  max="360"
+                  value={currentSlideData.rotation}
+                  onChange={(e) => updateSlide(currentSlide, { rotation: parseInt(e.target.value) })}
+                  style={styles.slider}
+                />
+              </div>
+              <div>
+                <label>Scale: {currentSlideData.scale}x</label>
+                <input
+                  type="range"
+                  min="0.1"
+                  max="3"
+                  step="0.1"
+                  value={currentSlideData.scale}
+                  onChange={(e) => updateSlide(currentSlide, { scale: parseFloat(e.target.value) })}
+                  style={styles.slider}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div style={{marginTop: '20px'}}>
             <h3>Background Colors:</h3>
             <div style={{display: 'flex', gap: '10px', marginTop: '10px'}}>
               {[
@@ -382,7 +603,8 @@ function App() {
                 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
                 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
                 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-                'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
+                'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
               ].map((bg, index) => (
                 <div
                   key={index}
@@ -403,14 +625,25 @@ function App() {
 
         <div style={styles.templates}>
           <h2>Animation Templates</h2>
+          {activeTemplate && (
+            <div style={{marginBottom: '15px', padding: '10px', backgroundColor: 'rgba(156, 39, 176, 0.3)', borderRadius: '5px'}}>
+              <strong>Active: {activeTemplate}</strong>
+            </div>
+          )}
           
           {templates.map((template) => (
             <button
               key={template.name}
-              style={styles.templateButton}
+              style={{
+                ...styles.templateButton,
+                ...(activeTemplate === template.name ? styles.templateButtonActive : {})
+              }}
               onClick={template.apply}
             >
-              <div style={{fontWeight: 'bold', marginBottom: '5px'}}>{template.name}</div>
+              <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px'}}>
+                <span style={{fontSize: '16px'}}>{template.icon}</span>
+                <span style={{fontWeight: 'bold'}}>{template.name}</span>
+              </div>
               <div style={{fontSize: '12px', opacity: 0.8}}>{template.description}</div>
             </button>
           ))}
@@ -418,10 +651,11 @@ function App() {
           <div style={{marginTop: '30px', padding: '15px', backgroundColor: 'rgba(33, 150, 243, 0.3)', borderRadius: '5px'}}>
             <h3 style={{marginBottom: '10px'}}>💡 Pro Tips</h3>
             <ul style={{fontSize: '12px', lineHeight: '1.5'}}>
-              <li>• Use templates as starting points</li>
-              <li>• Preview before exporting</li>
+              <li>• Click templates to apply animations</li>
+              <li>• Use 3D positioning for custom layouts</li>
+              <li>• Preview to see smooth transitions</li>
               <li>• Export creates standalone HTML files</li>
-              <li>• Works on all modern browsers</li>
+              <li>• Try combining different templates</li>
             </ul>
           </div>
         </div>
