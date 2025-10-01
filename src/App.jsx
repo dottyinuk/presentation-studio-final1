@@ -29,13 +29,17 @@ const styles = {
     border: 'none',
     borderRadius: '5px',
     cursor: 'pointer',
-    margin: '0 5px'
+    margin: '0 5px',
+    fontSize: '14px'
   },
   buttonBlue: {
     backgroundColor: '#2196F3'
   },
   buttonPurple: {
     backgroundColor: '#9c27b0'
+  },
+  buttonOrange: {
+    backgroundColor: '#ff9800'
   },
   main: {
     display: 'flex',
@@ -115,6 +119,68 @@ const styles = {
     position: 'relative',
     overflow: 'hidden',
     perspective: '1000px'
+  },
+  presentationMode: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100vw',
+    height: '100vh',
+    backgroundColor: 'black',
+    color: 'white',
+    zIndex: 10000,
+    overflow: 'hidden',
+    perspective: '1000px',
+    cursor: 'none'
+  },
+  presentationViewport: {
+    width: '100%',
+    height: '100vh',
+    position: 'relative',
+    transformStyle: 'preserve-3d',
+    transition: 'transform 1s ease-in-out'
+  },
+  presentationSlide: {
+    position: 'absolute',
+    width: '90vw',
+    height: '90vh',
+    maxWidth: '1200px',
+    maxHeight: '800px',
+    padding: '60px',
+    borderRadius: '15px',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    textAlign: 'center',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.8)',
+    transformStyle: 'preserve-3d',
+    transition: 'all 1s ease-in-out',
+    left: '50%',
+    top: '50%',
+    transform: 'translate(-50%, -50%)'
+  },
+  presentationTitle: {
+    fontSize: '4rem',
+    marginBottom: '30px',
+    fontWeight: 'bold',
+    textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
+  },
+  presentationContent: {
+    fontSize: '2rem',
+    lineHeight: '1.6',
+    textShadow: '1px 1px 2px rgba(0,0,0,0.5)'
+  },
+  presentationEscHint: {
+    position: 'fixed',
+    top: '20px',
+    right: '20px',
+    fontSize: '14px',
+    opacity: 0.7,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: '10px',
+    borderRadius: '5px',
+    animation: 'fadeInOut 3s ease-in-out'
   },
   viewport: {
     width: '100%',
@@ -238,13 +304,59 @@ function App() {
   const [currentSlide, setCurrentSlide] = useState(1)
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
   const [isPreview, setIsPreview] = useState(false)
+  const [isPresentationMode, setIsPresentationMode] = useState(false)
   const [activeTemplate, setActiveTemplate] = useState('')
+  const [showEscHint, setShowEscHint] = useState(false)
 
   // Update current slide index when current slide changes
   useEffect(() => {
     const index = slides.findIndex(s => s.id === currentSlide)
     setCurrentSlideIndex(index >= 0 ? index : 0)
   }, [currentSlide, slides])
+
+  // Keyboard navigation for presentation mode
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (isPresentationMode) {
+        switch (e.key) {
+          case 'Escape':
+            exitPresentationMode()
+            break
+          case 'ArrowRight':
+          case 'ArrowDown':
+          case 'PageDown':
+          case 'Tab':
+            e.preventDefault()
+            nextSlide()
+            break
+          case 'ArrowLeft':
+          case 'ArrowUp':
+          case 'PageUp':
+            e.preventDefault()
+            prevSlide()
+            break
+          case 'F11':
+            if (e.shiftKey) {
+              e.preventDefault()
+              toggleFullscreen()
+            }
+            break
+        }
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyPress)
+    return () => document.removeEventListener('keydown', handleKeyPress)
+  }, [isPresentationMode, currentSlideIndex, slides.length])
+
+  // Show escape hint when entering presentation mode
+  useEffect(() => {
+    if (isPresentationMode) {
+      setShowEscHint(true)
+      const timer = setTimeout(() => setShowEscHint(false), 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [isPresentationMode])
 
   const templates = [
     {
@@ -413,6 +525,23 @@ function App() {
     setCurrentSlide(slides[index].id)
   }
 
+  const enterPresentationMode = () => {
+    setIsPresentationMode(true)
+    setIsPreview(false)
+  }
+
+  const exitPresentationMode = () => {
+    setIsPresentationMode(false)
+  }
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen()
+    } else {
+      document.exitFullscreen()
+    }
+  }
+
   const exportHTML = () => {
     const html = `
 <!DOCTYPE html>
@@ -432,6 +561,10 @@ function App() {
         }
         .step h1 { font-size: 3em; margin-bottom: 20px; }
         .step p { font-size: 1.5em; line-height: 1.6; }
+        @keyframes fadeInOut {
+          0%, 100% { opacity: 0; }
+          50% { opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -448,7 +581,29 @@ function App() {
             <p>${slide.content}</p>
         </div>`).join('')}
     </div>
-    <script>impress().init();</script>
+    <script>
+        impress().init();
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            const api = impress();
+            switch(e.key) {
+                case 'ArrowRight':
+                case 'ArrowDown':
+                case 'PageDown':
+                case 'Tab':
+                    e.preventDefault();
+                    api.next();
+                    break;
+                case 'ArrowLeft':
+                case 'ArrowUp':
+                case 'PageUp':
+                    e.preventDefault();
+                    api.prev();
+                    break;
+            }
+        });
+    </script>
 </body>
 </html>`
 
@@ -479,6 +634,42 @@ function App() {
     return `translate3d(${translateX}px, ${translateY}px, ${translateZ}px) rotateZ(${rotate}deg) scale(${viewScale})`
   }
 
+  // Presentation Mode Component
+  if (isPresentationMode) {
+    return (
+      <div style={styles.presentationMode}>
+        {showEscHint && (
+          <div style={styles.presentationEscHint}>
+            Press ESC to exit • Arrow keys or Tab to navigate • Shift+F11 for fullscreen
+          </div>
+        )}
+        
+        <div 
+          style={{
+            ...styles.presentationViewport,
+            transform: getViewportTransform()
+          }}
+        >
+          {slides.map((slide, index) => (
+            <div
+              key={slide.id}
+              style={{
+                ...styles.presentationSlide,
+                background: slide.background,
+                transform: `translate3d(${slide.x}px, ${slide.y}px, ${slide.z}px) rotateZ(${slide.rotation}deg) scale(${slide.scale})`,
+                opacity: index === currentSlideIndex ? 1 : 0.1
+              }}
+            >
+              <h1 style={styles.presentationTitle}>{slide.title}</h1>
+              <p style={styles.presentationContent}>{slide.content}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // 3D Preview Mode
   if (isPreview) {
     return (
       <div style={styles.preview}>
@@ -490,10 +681,16 @@ function App() {
             ← Edit Mode
           </button>
           <button 
+            style={{...styles.button, ...styles.buttonOrange}}
+            onClick={enterPresentationMode}
+          >
+            🎬 Present
+          </button>
+          <button 
             style={{...styles.button, ...styles.buttonBlue}}
             onClick={exportHTML}
           >
-            Export HTML
+            📥 Export HTML
           </button>
         </div>
 
@@ -552,6 +749,7 @@ function App() {
     )
   }
 
+  // Main Edit Mode
   return (
     <div style={styles.container}>
       <header style={styles.header}>
@@ -565,6 +763,12 @@ function App() {
             onClick={() => setIsPreview(true)}
           >
             👁 3D Preview
+          </button>
+          <button 
+            style={{...styles.button, ...styles.buttonOrange}}
+            onClick={enterPresentationMode}
+          >
+            🎬 Present
           </button>
           <button 
             style={{...styles.button, ...styles.buttonBlue}}
@@ -764,9 +968,10 @@ function App() {
             <ul style={{fontSize: '12px', lineHeight: '1.5'}}>
               <li>• Click templates to see instant 3D positioning</li>
               <li>• Use 3D Preview to see smooth animations</li>
-              <li>• Navigate with Previous/Next buttons</li>
-              <li>• Export creates standalone HTML files</li>
-              <li>• Try combining different templates</li>
+              <li>• Use Present mode for full-screen presentations</li>
+              <li>• Navigate with arrow keys or Tab in Present mode</li>
+              <li>• Press ESC to exit Present mode</li>
+              <li>• Shift+F11 for browser fullscreen</li>
             </ul>
           </div>
         </div>
