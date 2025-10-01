@@ -149,7 +149,6 @@ const styles = {
   },
   presentationSlide: {
     position: 'absolute',
-    borderRadius: '15px',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
@@ -158,21 +157,29 @@ const styles = {
     boxShadow: '0 20px 60px rgba(0,0,0,0.8)',
     transformStyle: 'preserve-3d',
     transition: 'all 1s ease-in-out',
-    left: '50%',
-    top: '50%',
-    transform: 'translate(-50%, -50%)'
+    // Remove the transform centering that was causing issues
+    margin: 0,
+    padding: 0
   },
   presentationSlideFullScreen: {
+    top: '0px',
+    left: '0px',
     width: '100vw',
     height: '100vh',
     padding: '5vh 5vw',
-    borderRadius: '0px'
+    borderRadius: '0px',
+    // Ensure no centering transforms
+    transform: 'none !important'
   },
   presentationSlideBordered: {
+    top: '5vh',
+    left: '5vw',
     width: '90vw',
     height: '90vh',
     padding: '4vh 4vw',
-    borderRadius: '15px'
+    borderRadius: '15px',
+    // Ensure no centering transforms
+    transform: 'none !important'
   },
   presentationTitle: {
     marginBottom: '30px',
@@ -200,11 +207,27 @@ const styles = {
     top: '20px',
     right: '20px',
     fontSize: '14px',
-    opacity: 0.7,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    opacity: 0.9,
+    backgroundColor: 'rgba(0,0,0,0.8)',
     padding: '10px',
     borderRadius: '5px',
-    animation: 'fadeInOut 3s ease-in-out'
+    animation: 'fadeInOut 4s ease-in-out',
+    zIndex: 10001,
+    border: '1px solid rgba(255,255,255,0.3)'
+  },
+  borderToggleIndicator: {
+    position: 'fixed',
+    top: '70px',
+    right: '20px',
+    fontSize: '16px',
+    opacity: 0.9,
+    backgroundColor: 'rgba(255, 152, 0, 0.9)',
+    color: 'white',
+    padding: '12px 16px',
+    borderRadius: '8px',
+    zIndex: 10001,
+    border: '2px solid rgba(255,255,255,0.5)',
+    fontWeight: 'bold'
   },
   viewport: {
     width: '100%',
@@ -339,6 +362,7 @@ function App() {
   const [activeTemplate, setActiveTemplate] = useState('')
   const [showEscHint, setShowEscHint] = useState(false)
   const [useBorder, setUseBorder] = useState(true) // Default to bordered for better visibility
+  const [showBorderToggle, setShowBorderToggle] = useState(false)
 
   // Update current slide index when current slide changes
   useEffect(() => {
@@ -377,6 +401,8 @@ function App() {
           case 'B':
             // Toggle border in presentation mode
             setUseBorder(!useBorder)
+            setShowBorderToggle(true)
+            setTimeout(() => setShowBorderToggle(false), 3000)
             break
         }
       }
@@ -655,7 +681,7 @@ function App() {
 
   const currentSlideData = slides[currentSlideIndex] || slides[0]
 
-  // Calculate viewport transform for 3D preview
+  // Calculate viewport transform for 3D preview - DISABLED for presentation mode
   const getViewportTransform = () => {
     if (!currentSlideData) return 'translate3d(0,0,0)'
     
@@ -681,37 +707,45 @@ function App() {
           </div>
         )}
         
-        <div 
-          style={{
-            ...styles.presentationViewport,
-            transform: getViewportTransform()
-          }}
-        >
-          {slides.map((slide, index) => (
-            <div
-              key={slide.id}
-              style={{
-                ...styles.presentationSlide,
-                ...(useBorder ? styles.presentationSlideBordered : styles.presentationSlideFullScreen),
-                background: slide.background,
-                transform: `translate3d(${slide.x}px, ${slide.y}px, ${slide.z}px) rotateZ(${slide.rotation}deg) scale(${slide.scale})`,
-                opacity: index === currentSlideIndex ? 1 : 0.1
-              }}
-            >
-              <h1 style={{
-                ...styles.presentationTitle,
-                ...(useBorder ? styles.presentationTitleBordered : styles.presentationTitleFullScreen)
-              }}>
-                {slide.title}
-              </h1>
-              <p style={{
-                ...styles.presentationContent,
-                ...(useBorder ? styles.presentationContentBordered : styles.presentationContentFullScreen)
-              }}>
-                {slide.content}
-              </p>
-            </div>
-          ))}
+        {showBorderToggle && (
+          <div style={styles.borderToggleIndicator}>
+            {useBorder ? '📱 Bordered Mode (90%)' : '🖥️ Full Screen Mode (100%)'}
+          </div>
+        )}
+        
+        {/* FIXED: Remove the viewport transform that was causing centering issues */}
+        <div style={styles.presentationViewport}>
+          {slides.map((slide, index) => {
+            // Only show the current slide to avoid positioning conflicts
+            if (index !== currentSlideIndex) return null;
+            
+            return (
+              <div
+                key={slide.id}
+                style={{
+                  ...styles.presentationSlide,
+                  ...(useBorder ? styles.presentationSlideBordered : styles.presentationSlideFullScreen),
+                  background: slide.background,
+                  // Remove the 3D positioning transforms for presentation mode
+                  // This was causing the slides to be positioned incorrectly
+                  opacity: 1
+                }}
+              >
+                <h1 style={{
+                  ...styles.presentationTitle,
+                  ...(useBorder ? styles.presentationTitleBordered : styles.presentationTitleFullScreen)
+                }}>
+                  {slide.title}
+                </h1>
+                <p style={{
+                  ...styles.presentationContent,
+                  ...(useBorder ? styles.presentationContentBordered : styles.presentationContentFullScreen)
+                }}>
+                  {slide.content}
+                </p>
+              </div>
+            )
+          })}
         </div>
       </div>
     )
