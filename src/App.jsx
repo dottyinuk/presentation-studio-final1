@@ -41,6 +41,13 @@ const styles = {
   buttonOrange: {
     backgroundColor: '#ff9800'
   },
+  buttonGray: {
+    backgroundColor: '#757575'
+  },
+  buttonActive: {
+    backgroundColor: '#4CAF50',
+    boxShadow: '0 0 10px rgba(76, 175, 80, 0.5)'
+  },
   main: {
     display: 'flex',
     height: 'calc(100vh - 80px)'
@@ -142,11 +149,6 @@ const styles = {
   },
   presentationSlide: {
     position: 'absolute',
-    width: '90vw',
-    height: '90vh',
-    maxWidth: '1200px',
-    maxHeight: '800px',
-    padding: '60px',
     borderRadius: '15px',
     display: 'flex',
     flexDirection: 'column',
@@ -160,16 +162,38 @@ const styles = {
     top: '50%',
     transform: 'translate(-50%, -50%)'
   },
+  presentationSlideFullScreen: {
+    width: '100vw',
+    height: '100vh',
+    padding: '5vh 5vw',
+    borderRadius: '0px'
+  },
+  presentationSlideBordered: {
+    width: '90vw',
+    height: '90vh',
+    padding: '4vh 4vw',
+    borderRadius: '15px'
+  },
   presentationTitle: {
-    fontSize: '4rem',
     marginBottom: '30px',
     fontWeight: 'bold',
     textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
   },
+  presentationTitleFullScreen: {
+    fontSize: 'clamp(3rem, 8vw, 6rem)'
+  },
+  presentationTitleBordered: {
+    fontSize: 'clamp(2.5rem, 6vw, 4.5rem)'
+  },
   presentationContent: {
-    fontSize: '2rem',
     lineHeight: '1.6',
     textShadow: '1px 1px 2px rgba(0,0,0,0.5)'
+  },
+  presentationContentFullScreen: {
+    fontSize: 'clamp(1.5rem, 4vw, 3rem)'
+  },
+  presentationContentBordered: {
+    fontSize: 'clamp(1.2rem, 3vw, 2.2rem)'
   },
   presentationEscHint: {
     position: 'fixed',
@@ -273,6 +297,13 @@ const styles = {
     padding: '10px',
     borderRadius: '5px',
     zIndex: 1000
+  },
+  borderToggleSection: {
+    marginTop: '20px',
+    padding: '15px',
+    backgroundColor: 'rgba(255, 152, 0, 0.2)',
+    borderRadius: '5px',
+    border: '1px solid rgba(255, 152, 0, 0.3)'
   }
 }
 
@@ -307,6 +338,7 @@ function App() {
   const [isPresentationMode, setIsPresentationMode] = useState(false)
   const [activeTemplate, setActiveTemplate] = useState('')
   const [showEscHint, setShowEscHint] = useState(false)
+  const [useBorder, setUseBorder] = useState(true) // Default to bordered for better visibility
 
   // Update current slide index when current slide changes
   useEffect(() => {
@@ -341,19 +373,24 @@ function App() {
               toggleFullscreen()
             }
             break
+          case 'b':
+          case 'B':
+            // Toggle border in presentation mode
+            setUseBorder(!useBorder)
+            break
         }
       }
     }
 
     document.addEventListener('keydown', handleKeyPress)
     return () => document.removeEventListener('keydown', handleKeyPress)
-  }, [isPresentationMode, currentSlideIndex, slides.length])
+  }, [isPresentationMode, currentSlideIndex, slides.length, useBorder])
 
   // Show escape hint when entering presentation mode
   useEffect(() => {
     if (isPresentationMode) {
       setShowEscHint(true)
-      const timer = setTimeout(() => setShowEscHint(false), 3000)
+      const timer = setTimeout(() => setShowEscHint(false), 4000)
       return () => clearTimeout(timer)
     }
   }, [isPresentationMode])
@@ -640,7 +677,7 @@ function App() {
       <div style={styles.presentationMode}>
         {showEscHint && (
           <div style={styles.presentationEscHint}>
-            Press ESC to exit • Arrow keys or Tab to navigate • Shift+F11 for fullscreen
+            Press ESC to exit • Arrow keys/Tab to navigate • Shift+F11 for fullscreen • B to toggle border
           </div>
         )}
         
@@ -655,13 +692,24 @@ function App() {
               key={slide.id}
               style={{
                 ...styles.presentationSlide,
+                ...(useBorder ? styles.presentationSlideBordered : styles.presentationSlideFullScreen),
                 background: slide.background,
                 transform: `translate3d(${slide.x}px, ${slide.y}px, ${slide.z}px) rotateZ(${slide.rotation}deg) scale(${slide.scale})`,
                 opacity: index === currentSlideIndex ? 1 : 0.1
               }}
             >
-              <h1 style={styles.presentationTitle}>{slide.title}</h1>
-              <p style={styles.presentationContent}>{slide.content}</p>
+              <h1 style={{
+                ...styles.presentationTitle,
+                ...(useBorder ? styles.presentationTitleBordered : styles.presentationTitleFullScreen)
+              }}>
+                {slide.title}
+              </h1>
+              <p style={{
+                ...styles.presentationContent,
+                ...(useBorder ? styles.presentationContentBordered : styles.presentationContentFullScreen)
+              }}>
+                {slide.content}
+              </p>
             </div>
           ))}
         </div>
@@ -848,6 +896,35 @@ function App() {
             />
           </div>
 
+          <div style={styles.borderToggleSection}>
+            <h3>🎬 Presentation Display Options</h3>
+            <div style={{display: 'flex', gap: '10px', marginTop: '10px', alignItems: 'center'}}>
+              <button
+                style={{
+                  ...styles.button,
+                  ...(useBorder ? styles.buttonActive : styles.buttonGray)
+                }}
+                onClick={() => setUseBorder(true)}
+              >
+                📱 Bordered (90% screen)
+              </button>
+              <button
+                style={{
+                  ...styles.button,
+                  ...(!useBorder ? styles.buttonActive : styles.buttonGray)
+                }}
+                onClick={() => setUseBorder(false)}
+              >
+                🖥️ Full Screen (100%)
+              </button>
+            </div>
+            <div style={{fontSize: '12px', opacity: 0.8, marginTop: '8px'}}>
+              • <strong>Bordered:</strong> 5% margin around slides for better visibility<br/>
+              • <strong>Full Screen:</strong> Content fills entire screen for maximum impact<br/>
+              • <strong>Tip:</strong> Press 'B' during presentation to toggle between modes
+            </div>
+          </div>
+
           <div style={{marginTop: '20px'}}>
             <h3>3D Positioning:</h3>
             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '10px'}}>
@@ -971,6 +1048,7 @@ function App() {
               <li>• Use Present mode for full-screen presentations</li>
               <li>• Navigate with arrow keys or Tab in Present mode</li>
               <li>• Press ESC to exit Present mode</li>
+              <li>• Press B to toggle border in Present mode</li>
               <li>• Shift+F11 for browser fullscreen</li>
             </ul>
           </div>
