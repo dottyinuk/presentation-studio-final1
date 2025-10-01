@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const styles = {
   container: {
@@ -112,16 +112,21 @@ const styles = {
     minHeight: '100vh',
     backgroundColor: 'black',
     color: 'white',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative'
+    position: 'relative',
+    overflow: 'hidden',
+    perspective: '1000px'
+  },
+  viewport: {
+    width: '100%',
+    height: '100vh',
+    position: 'relative',
+    transformStyle: 'preserve-3d',
+    transition: 'transform 1s ease-in-out'
   },
   slide: {
-    width: '80%',
-    maxWidth: '800px',
-    height: '400px',
+    position: 'absolute',
+    width: '800px',
+    height: '600px',
     padding: '40px',
     borderRadius: '10px',
     display: 'flex',
@@ -129,7 +134,13 @@ const styles = {
     justifyContent: 'center',
     alignItems: 'center',
     textAlign: 'center',
-    transition: 'all 1s ease'
+    boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+    transformStyle: 'preserve-3d',
+    transition: 'all 1s ease-in-out',
+    left: '50%',
+    top: '50%',
+    marginLeft: '-400px',
+    marginTop: '-300px'
   },
   slideTitle: {
     fontSize: '3rem',
@@ -144,7 +155,27 @@ const styles = {
     position: 'fixed',
     top: '20px',
     left: '20px',
-    zIndex: 1000
+    zIndex: 1000,
+    display: 'flex',
+    gap: '10px'
+  },
+  navControls: {
+    position: 'fixed',
+    bottom: '80px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    zIndex: 1000,
+    display: 'flex',
+    gap: '15px'
+  },
+  navButton: {
+    padding: '15px 20px',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    color: 'white',
+    border: '1px solid rgba(255,255,255,0.3)',
+    borderRadius: '5px',
+    cursor: 'pointer',
+    fontSize: '16px'
   },
   indicators: {
     position: 'fixed',
@@ -152,7 +183,8 @@ const styles = {
     left: '50%',
     transform: 'translateX(-50%)',
     display: 'flex',
-    gap: '10px'
+    gap: '10px',
+    zIndex: 1000
   },
   indicator: {
     width: '12px',
@@ -163,7 +195,18 @@ const styles = {
     transition: 'all 0.3s'
   },
   indicatorActive: {
-    backgroundColor: 'white'
+    backgroundColor: 'white',
+    transform: 'scale(1.2)'
+  },
+  slideInfo: {
+    position: 'fixed',
+    top: '20px',
+    right: '20px',
+    fontSize: '14px',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: '10px',
+    borderRadius: '5px',
+    zIndex: 1000
   }
 }
 
@@ -193,8 +236,15 @@ function App() {
   ])
   
   const [currentSlide, setCurrentSlide] = useState(1)
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
   const [isPreview, setIsPreview] = useState(false)
   const [activeTemplate, setActiveTemplate] = useState('')
+
+  // Update current slide index when current slide changes
+  useEffect(() => {
+    const index = slides.findIndex(s => s.id === currentSlide)
+    setCurrentSlideIndex(index >= 0 ? index : 0)
+  }, [currentSlide, slides])
 
   const templates = [
     {
@@ -346,6 +396,23 @@ function App() {
     ))
   }
 
+  const nextSlide = () => {
+    const nextIndex = (currentSlideIndex + 1) % slides.length
+    setCurrentSlideIndex(nextIndex)
+    setCurrentSlide(slides[nextIndex].id)
+  }
+
+  const prevSlide = () => {
+    const prevIndex = currentSlideIndex === 0 ? slides.length - 1 : currentSlideIndex - 1
+    setCurrentSlideIndex(prevIndex)
+    setCurrentSlide(slides[prevIndex].id)
+  }
+
+  const goToSlide = (index) => {
+    setCurrentSlideIndex(index)
+    setCurrentSlide(slides[index].id)
+  }
+
   const exportHTML = () => {
     const html = `
 <!DOCTYPE html>
@@ -394,7 +461,23 @@ function App() {
     URL.revokeObjectURL(url)
   }
 
-  const currentSlideData = slides.find(s => s.id === currentSlide) || slides[0]
+  const currentSlideData = slides[currentSlideIndex] || slides[0]
+
+  // Calculate viewport transform for 3D preview
+  const getViewportTransform = () => {
+    if (!currentSlideData) return 'translate3d(0,0,0)'
+    
+    const { x, y, z, rotation, scale } = currentSlideData
+    
+    // Invert the slide's transform to center it in the viewport
+    const translateX = -x
+    const translateY = -y
+    const translateZ = -z
+    const rotate = -rotation
+    const viewScale = 1 / scale
+    
+    return `translate3d(${translateX}px, ${translateY}px, ${translateZ}px) rotateZ(${rotate}deg) scale(${viewScale})`
+  }
 
   if (isPreview) {
     return (
@@ -413,32 +496,57 @@ function App() {
             Export HTML
           </button>
         </div>
+
+        <div style={styles.navControls}>
+          <button style={styles.navButton} onClick={prevSlide}>
+            ← Previous
+          </button>
+          <button style={styles.navButton} onClick={nextSlide}>
+            Next →
+          </button>
+        </div>
         
         <div 
           style={{
-            ...styles.slide,
-            background: currentSlideData.background
+            ...styles.viewport,
+            transform: getViewportTransform()
           }}
         >
-          <h1 style={styles.slideTitle}>{currentSlideData.title}</h1>
-          <p style={styles.slideContent}>{currentSlideData.content}</p>
+          {slides.map((slide, index) => (
+            <div
+              key={slide.id}
+              style={{
+                ...styles.slide,
+                background: slide.background,
+                transform: `translate3d(${slide.x}px, ${slide.y}px, ${slide.z}px) rotateZ(${slide.rotation}deg) scale(${slide.scale})`,
+                opacity: index === currentSlideIndex ? 1 : 0.3
+              }}
+            >
+              <h1 style={styles.slideTitle}>{slide.title}</h1>
+              <p style={styles.slideContent}>{slide.content}</p>
+            </div>
+          ))}
         </div>
         
         <div style={styles.indicators}>
-          {slides.map((slide) => (
+          {slides.map((slide, index) => (
             <div
               key={slide.id}
               style={{
                 ...styles.indicator,
-                ...(slide.id === currentSlide ? styles.indicatorActive : {})
+                ...(index === currentSlideIndex ? styles.indicatorActive : {})
               }}
-              onClick={() => setCurrentSlide(slide.id)}
+              onClick={() => goToSlide(index)}
             />
           ))}
         </div>
         
-        <div style={{position: 'fixed', top: '20px', right: '20px', fontSize: '14px'}}>
-          Slide {slides.findIndex(s => s.id === currentSlide) + 1} of {slides.length}
+        <div style={styles.slideInfo}>
+          <div>Slide {currentSlideIndex + 1} of {slides.length}</div>
+          <div>Template: {activeTemplate || 'None'}</div>
+          <div>Position: ({currentSlideData.x}, {currentSlideData.y}, {currentSlideData.z})</div>
+          <div>Rotation: {currentSlideData.rotation}°</div>
+          <div>Scale: {currentSlideData.scale}x</div>
         </div>
       </div>
     )
@@ -456,7 +564,7 @@ function App() {
             style={styles.button}
             onClick={() => setIsPreview(true)}
           >
-            👁 Preview
+            👁 3D Preview
           </button>
           <button 
             style={{...styles.button, ...styles.buttonBlue}}
@@ -488,6 +596,9 @@ function App() {
                   <div style={{fontWeight: 'bold', fontSize: '14px'}}>{slide.title}</div>
                   <div style={{fontSize: '12px', opacity: 0.8, marginTop: '5px'}}>
                     {slide.content.substring(0, 30)}...
+                  </div>
+                  <div style={{fontSize: '10px', opacity: 0.6, marginTop: '3px'}}>
+                    ({slide.x}, {slide.y}, {slide.z}) • {slide.rotation}° • {slide.scale}x
                   </div>
                 </div>
                 <button
@@ -651,9 +762,9 @@ function App() {
           <div style={{marginTop: '30px', padding: '15px', backgroundColor: 'rgba(33, 150, 243, 0.3)', borderRadius: '5px'}}>
             <h3 style={{marginBottom: '10px'}}>💡 Pro Tips</h3>
             <ul style={{fontSize: '12px', lineHeight: '1.5'}}>
-              <li>• Click templates to apply animations</li>
-              <li>• Use 3D positioning for custom layouts</li>
-              <li>• Preview to see smooth transitions</li>
+              <li>• Click templates to see instant 3D positioning</li>
+              <li>• Use 3D Preview to see smooth animations</li>
+              <li>• Navigate with Previous/Next buttons</li>
               <li>• Export creates standalone HTML files</li>
               <li>• Try combining different templates</li>
             </ul>
